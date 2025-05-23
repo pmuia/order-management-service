@@ -1,27 +1,38 @@
 ﻿using MediatR;
+using Ordering.Application.Data;
 
 
-namespace Ordering.Application.Services.Orders.Commands.CreateOrder
+namespace Ordering.Application.Services.Orders.Commands.UpdateOrder
 {
-	public class CreateOrderHandler : IRequestHandler<CreateOrderCommand, CreateOrderResult>
+	public class UpdateOrderHandler : IRequestHandler<UpdateOrderCommand, UpdateOrderResult>
 	{
 		private readonly IApplicationDbContext _applicationDbContext;
-		public CreateOrderHandler(IApplicationDbContext applicationDbContext)
+		public UpdateOrderHandler(IApplicationDbContext applicationDbContext)
 		{
 			_applicationDbContext = applicationDbContext;
 		}
-		public async Task<CreateOrderResult> Handle(CreateOrderCommand request, CancellationToken cancellationToken)
-		{
-			var order = CreateNewOrder(request.Order);
 
-			_applicationDbContext.Orders.Add(order);
+		public async Task<UpdateOrderResult> Handle(UpdateOrderCommand request, CancellationToken cancellationToken)
+		{
+			var orderId = OrderId.Of(request.Order.Id);
+
+			var order = await _applicationDbContext.Orders.FindAsync(orderId, cancellationToken);
+
+			if (order is null)
+			{
+				throw new OrderNotFoundException(request.Order.Id.ToString());
+			}
+
+			UpdateOrder(order,request.Order);
+
+			_applicationDbContext.Orders.Update(order);
 
 			await _applicationDbContext.SaveChangesAsync(cancellationToken);
 
-			return new CreateOrderResult(order.Id.Value);
+			return new UpdateOrderResult(true);
 		}
 
-		private Order CreateNewOrder(OrderDto orderDto)
+		public void UpdateOrder(Order order, OrderDto orderDto)
 		{
 			var shippingAddress = Address.Of(orderDto.ShippingAddress.FirstName, orderDto.ShippingAddress.LastName, orderDto.ShippingAddress.EmailAddress, orderDto.ShippingAddress.AddressLine, orderDto.ShippingAddress.Country, orderDto.ShippingAddress.State, orderDto.ShippingAddress.ZipCode);
 
@@ -29,14 +40,7 @@ namespace Ordering.Application.Services.Orders.Commands.CreateOrder
 
 			var payment = Payment.Of(orderDto.PaymentDto.CardName, orderDto.PaymentDto.CardName, orderDto.PaymentDto.Expiration, orderDto.PaymentDto.Cvv, orderDto.PaymentDto.PaymentMethod);
 
-			var order = Order.Create(OrderId.Of(Guid.NewGuid()), CustomerId.Of(orderDto.CustomerId), OrderName.Of(orderDto.OrderName), shippingAddress, billingAddress, payment);
-
-			foreach(var orderItemDto in orderDto.OrderItems)
-			{
-				order.Add(ProductId.Of(orderItemDto.ProductId), orderItemDto.Quantity, orderItemDto.Price);
-			}
-
-			return order;
+			order.Update(OrderName.Of(orderDto.OrderName), shippingAddress, billingAddress, payment, orderDto.Status);
 		}
 	}
 }

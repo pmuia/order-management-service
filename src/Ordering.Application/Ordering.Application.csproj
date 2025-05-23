@@ -19,9 +19,8 @@
 
   <ItemGroup>
     <Folder Include="Extensions\" />
-    <Folder Include="Exceptions\" />
-    <Folder Include="Services\Orders\EventHandlers\" />
-    <Folder Include="Services\Orders\Queries\" />
+    <Folder Include="Behaviors\" />
+    <Folder Include="Services\Orders\EventHandlers\IntegrationEvents\" />
   </ItemGroup>
 
 </Project>
