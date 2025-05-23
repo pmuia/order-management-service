@@ -18,7 +18,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Extensions\" />
     <Folder Include="Behaviors\" />
     <Folder Include="Services\Orders\EventHandlers\IntegrationEvents\" />
   </ItemGroup>
